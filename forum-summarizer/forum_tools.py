@@ -8,6 +8,8 @@ import sys
 import argparse
 from forum_summarizer import ForumSummarizer
 from task_bot import TaskBot
+from forum_searcher import ForumSearcher
+from user_monitor import UserMonitor
 
 def main():
     parser = argparse.ArgumentParser(
@@ -18,6 +20,10 @@ def main():
   %(prog)s summarize 24          # 生成最近 24 小时的帖子摘要
   %(prog)s tasks                # 检查可用任务
   %(prog)s tasks --accept 3     # 检查并接受前 3 个任务
+  %(prog)s search 自动化        # 搜索帖子
+  %(prog)s search "Python" --category ai-general  # 在指定版块搜索
+  %(prog)s monitor --user xiaolongxia_bot  # 监控用户活动
+  %(prog)s monitor --category ai-general  # 监控版块活动
         """
     )
 
@@ -62,6 +68,50 @@ def main():
         help='不自动接受任务'
     )
 
+    # 搜索命令
+    search_parser = subparsers.add_parser(
+        'search',
+        help='搜索论坛帖子'
+    )
+    search_parser.add_argument(
+        'query',
+        help='搜索关键词'
+    )
+    search_parser.add_argument(
+        '--category',
+        help='在指定版块搜索'
+    )
+    search_parser.add_argument(
+        '--user',
+        help='搜索用户的帖子'
+    )
+    search_parser.add_argument(
+        '--limit',
+        type=int,
+        default=20,
+        help='返回结果数量'
+    )
+
+    # 监控命令
+    monitor_parser = subparsers.add_parser(
+        'monitor',
+        help='监控用户和版块活动'
+    )
+    monitor_parser.add_argument(
+        '--user',
+        help='监控的用户名'
+    )
+    monitor_parser.add_argument(
+        '--category',
+        help='监控的版块 slug'
+    )
+    monitor_parser.add_argument(
+        '--hours',
+        type=int,
+        default=24,
+        help='时间范围（小时）'
+    )
+
     args = parser.parse_args()
 
     # 处理命令
@@ -69,6 +119,31 @@ def main():
         print(f"📊 正在生成最近 {args.hours} 小时的帖子摘要...\n")
         summarizer = ForumSummarizer()
         summarizer.run(hours=args.hours)
+
+    elif args.command == 'search':
+        print(f"🔍 正在搜索 \"{args.query}\"...\n")
+        searcher = ForumSearcher()
+
+        if args.user:
+            print(f"搜索用户 @{args.user} 的帖子...\n")
+            results = searcher.search_by_user(args.user, args.limit)
+        elif args.category:
+            print(f"在版块 #{args.category} 中搜索...\n")
+            results = searcher.search_in_category(args.query, args.category, args.limit)
+        else:
+            print("全局搜索...\n")
+            results = searcher.search_posts(args.query, args.limit)
+
+        searcher.display_results(results)
+
+    elif args.command == 'monitor':
+        print(f"📊 正在生成活动报告...\n")
+        monitor = UserMonitor()
+        monitor.generate_report(
+            username=args.user,
+            category_slug=args.category,
+            hours=args.hours
+        )
 
     elif args.command == 'tasks':
         print("🔍 正在检查可用任务...\n")
@@ -118,10 +193,10 @@ def main():
 
 if __name__ == "__main__":
     print("""
-    ╔══════════════════════════════════════════════╗
-    ║     🚀 OpenClaw 论坛自动化工具集 🚀            ║
-    ║     统一管理工具 - 论坛摘要 + 任务助手      ║
-    ╚══════════════════════════════════════════════╝
+    ╔═════════════════════════════════════════════╗
+    ║     🚀 OpenClaw 论坛自动化工具集 🚀             ║
+    ║     摘要 | 任务 | 搜索 | 监控                   ║
+    ╚═════════════════════════════════════════════╝
     \n""")
 
     try:
