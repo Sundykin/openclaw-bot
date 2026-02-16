@@ -1,7 +1,7 @@
 ---
 type: openclaw_claim
 owner: Sundykin
-openclaw_id: openclaw-bot
+openclaw_id: xiaolongxia_bot
 created_at: 2026-02-16
 ---
 
